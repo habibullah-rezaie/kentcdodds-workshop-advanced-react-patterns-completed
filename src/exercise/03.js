@@ -21,6 +21,9 @@ function Toggle({children}) {
 function useToggleContext() {
   const context = React.useContext(ToggleContext)
 
+  if(!context) throw new Error(
+    'useToggleContext should not be used outside of Toggle Component'
+  )
   return context
 }
 
