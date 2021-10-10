@@ -1,12 +1,15 @@
- // State Reducer
+// State Reducer
 // http://localhost:3000/isolated/exercise/05.js
 
 import * as React from 'react'
 import {Switch} from '../switch'
 
-const callAll = (...fns) => (...args) => fns.forEach(fn => fn?.(...args))
+const callAll =
+  (...fns) =>
+  (...args) =>
+    fns.forEach(fn => fn?.(...args))
 
-function toggleReducer(state, {type, initialState}) {
+function defaultReducer(state, {type, initialState}) {
   switch (type) {
     case 'toggle': {
       return {on: !state.on}
@@ -20,9 +23,9 @@ function toggleReducer(state, {type, initialState}) {
   }
 }
 
-function useToggle({initialOn = false, reducer=toggleReducer} = {}) {
+function useToggle({initialOn = false, reducer = defaultReducer} = {}) {
   const {current: initialState} = React.useRef({on: initialOn})
-  
+
   const [state, dispatch] = React.useReducer(reducer, initialState)
   const {on} = state
 
@@ -50,6 +53,7 @@ function useToggle({initialOn = false, reducer=toggleReducer} = {}) {
     toggle,
     getTogglerProps,
     getResetterProps,
+    defaultReducer,
   }
 }
 
@@ -57,26 +61,17 @@ function App() {
   const [timesClicked, setTimesClicked] = React.useState(0)
   const clickedTooMuch = timesClicked >= 4
 
-  function toggleStateReducer(state, action) {
-    switch (action.type) {
-      case 'toggle': {
-        if (clickedTooMuch) {
-          return {on: state.on}
-        }
-        return {on: !state.on}
-      }
-      case 'reset': {
-        return {on: false}
-      }
-      default: {
-        throw new Error(`Unsupported type: ${action.type}`)
-      }
-    }
-  }
-
   const {on, getTogglerProps, getResetterProps} = useToggle({
     reducer: toggleStateReducer,
+    defaultReducer,
   })
+
+  function toggleStateReducer(state, action) {
+    if (action.type === 'toggle' && clickedTooMuch) {
+      return {on: state.on}
+    }
+    return defaultReducer(state, action)
+  }
 
   return (
     <div>
