@@ -3,6 +3,7 @@
 
 import * as React from 'react'
 import {Switch} from '../switch'
+import * as warning from 'warning'
 
 const callAll =
   (...fns) =>
@@ -39,6 +40,11 @@ function useToggle({
   const onIsControlled = controlledOn != null
 
   const on = onIsControlled ? controlledOn : state.on
+
+  warning(
+    onChange,
+    `Warning: Failed prop type: You provided a \`on\` prop to a form toggle without an \`onChange\` handler. This will render a read-only toggle.`,
+  )
 
   function dispatchWithOnChange(action) {
     if (onIsControlled) {
