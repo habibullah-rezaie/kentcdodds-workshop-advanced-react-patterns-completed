@@ -3,7 +3,7 @@
 
 import * as React from 'react'
 import {Switch} from '../switch'
-import * as warning from 'warning'
+import warning from 'warning'
 
 const callAll =
   (...fns) =>
@@ -34,6 +34,7 @@ function useToggle({
   reducer = toggleReducer,
   onChange,
   on: controlledOn,
+  readOnly = false,
 } = {}) {
   const {current: initialState} = React.useRef({on: initialOn})
   const [state, dispatch] = React.useReducer(reducer, initialState)
@@ -41,18 +42,31 @@ function useToggle({
 
   const on = onIsControlled ? controlledOn : state.on
 
-  warning(
-    onChange,
-    `Warning: Failed prop type: You provided a \`on\` prop to a form toggle without an \`onChange\` handler. This will render a read-only toggle.`,
-  )
+  const {current: onWasControlled} = React.useRef(onIsControlled)
+  React.useEffect(() => {
+    warning(
+      !(onIsControlled && !onWasControlled),
+      'A component is changing an uncontrolled input of type undefined to be controlled. Input elements should not switch from uncontrolled to controlled (or vice versa). Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://fb.me/react-controlled-components',
+    )
+    warning(
+      !(!onIsControlled && onWasControlled),
+      'A component is changing a controlled input of type undefined to be uncontrolled. Input elements should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://fb.me/react-controlled-components',
+    )
+  }, [onIsControlled, onWasControlled])
+
+  React.useEffect(() => {
+    warning(
+      !(onIsControlled && !onChange && !readOnly),
+      `Failed prop type: You provided a \`value\` prop to a form field without an \`onChange\` handler. This will render a read-only field. If the field should be mutable use \`initialOn\`. Otherwise, set either \`onChange\` or \`readOnly\`.`,
+    )
+  }, [onChange, onIsControlled, readOnly])
 
   function dispatchWithOnChange(action) {
-    if (onIsControlled) {
-      const suggestedChange = reducer({...state, on}, action)
-      onChange?.(suggestedChange, action)
-    } else {
+    if (!onIsControlled) {
       dispatch(action)
     }
+
+    onChange?.(reducer({...state, on}, action), action)
   }
 
   const toggle = () => dispatchWithOnChange({type: actionTypes.toggle})
@@ -83,8 +97,12 @@ function useToggle({
   }
 }
 
-function Toggle({on: controlledOn, onChange}) {
-  const {on, getTogglerProps} = useToggle({on: controlledOn, onChange})
+function Toggle({on: controlledOn, onChange, readOnly}) {
+  const {on, getTogglerProps} = useToggle({
+    on: controlledOn,
+    onChange,
+    readOnly,
+  })
   const props = getTogglerProps({on})
   return <Switch {...props} />
 }
@@ -97,7 +115,6 @@ function App() {
     if (action.type === actionTypes.toggle && timesClicked > 4) {
       return
     }
-    console.log(bothOn)
     setBothOn(state.on)
     setTimesClicked(c => c + 1)
   }
